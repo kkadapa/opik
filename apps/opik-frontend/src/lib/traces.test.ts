@@ -114,6 +114,127 @@ describe("prettifyMessage", () => {
     expect(result).toEqual({ message: "Last user message", prettified: true });
   });
 
+  it("handles LangGraph input with human message containing array content", () => {
+    const message = {
+      messages: [
+        {
+          type: "human",
+          content: [
+            {
+              type: "text",
+              text: "Hello from array content",
+            },
+          ],
+        },
+      ],
+    };
+    const result = prettifyMessage(message, { type: "input" });
+    expect(result).toEqual({
+      message: "Hello from array content",
+      prettified: true,
+    });
+  });
+
+  it("handles LangGraph input with multiple human messages with array content and returns the last one", () => {
+    const message = {
+      messages: [
+        {
+          type: "human",
+          content: [
+            {
+              type: "text",
+              text: "First message with array content",
+            },
+          ],
+        },
+        { type: "ai", content: "AI response" },
+        {
+          type: "human",
+          content: [
+            {
+              type: "text",
+              text: "Last message with array content",
+            },
+          ],
+        },
+      ],
+    };
+    const result = prettifyMessage(message, { type: "input" });
+    expect(result).toEqual({
+      message: "Last message with array content",
+      prettified: true,
+    });
+  });
+
+  it("handles LangGraph input with mixed string and array content in human messages", () => {
+    const message = {
+      messages: [
+        { type: "human", content: "First string message" },
+        { type: "ai", content: "AI response" },
+        {
+          type: "human",
+          content: [
+            {
+              type: "text",
+              text: "Array content message",
+            },
+          ],
+        },
+        { type: "ai", content: "Another AI response" },
+        { type: "human", content: "Last string message" },
+      ],
+    };
+    const result = prettifyMessage(message, { type: "input" });
+    expect(result).toEqual({
+      message: "Last string message",
+      prettified: true,
+    });
+  });
+
+  it("handles LangGraph input where system message is last", () => {
+    const message = {
+      messages: [
+        {
+          type: "human",
+          content: [
+            {
+              type: "text",
+              text: "[2026-01-12 19:22:36] Hi there",
+            },
+          ],
+        },
+        { type: "ai", content: "AI response" },
+        { type: "system", content: "System instruction" },
+      ],
+    };
+    const result = prettifyMessage(message, { type: "input" });
+    expect(result).toEqual({
+      message: "[2026-01-12 19:22:36] Hi there",
+      prettified: true,
+    });
+  });
+
+  it("handles LangGraph input with array content containing single text item", () => {
+    const message = {
+      messages: [
+        {
+          type: "human",
+          content: [
+            {
+              type: "text",
+              text: "Single text item",
+            },
+          ],
+        },
+      ],
+    };
+    const result = prettifyMessage(message, { type: "input" });
+    expect(result).toEqual({
+      message: "Single text item",
+      prettified: true,
+    });
+  });
+
   it("handles LangGraph output message format with multiple AI messages", () => {
     const message = {
       messages: [

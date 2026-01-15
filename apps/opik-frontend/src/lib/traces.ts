@@ -62,6 +62,15 @@ const prettifyOpenAIMessageLogic = (
     isArray(message.messages)
   ) {
     const lastMessage = last(message.messages);
+    // Skip if this looks like LangGraph/LangChain format (has 'type' field instead of 'role')
+    if (
+      lastMessage &&
+      isObject(lastMessage) &&
+      "type" in lastMessage &&
+      !("role" in lastMessage)
+    ) {
+      return undefined;
+    }
     if (lastMessage && isObject(lastMessage) && "content" in lastMessage) {
       if (isString(lastMessage.content) && lastMessage.content.length > 0) {
         return lastMessage.content;
@@ -212,18 +221,37 @@ const prettifyLangGraphLogic = (
     "messages" in message &&
     isArray(message.messages)
   ) {
-    const humanMessages = message.messages.filter(
-      (m) =>
-        isObject(m) &&
-        "type" in m &&
-        m.type === "human" &&
-        "content" in m &&
-        isString(m.content) &&
-        m.content !== "",
-    );
+    // Collect all human messages, extracting text from both string and array content formats
+    const humanMessageTexts = [];
 
-    if (humanMessages.length > 0) {
-      return last(humanMessages).content;
+    for (const m of message.messages) {
+      if (isObject(m) && "type" in m && m.type === "human" && "content" in m) {
+        // The message can either contain a string attribute named `content`
+        if (isString(m.content) && m.content !== "") {
+          humanMessageTexts.push(m.content);
+        }
+        // Or content can be an array with text content
+        else if (isArray(m.content)) {
+          const textItems = m.content.filter(
+            (c) =>
+              isObject(c) &&
+              "type" in c &&
+              c.type === "text" &&
+              "text" in c &&
+              isString(c.text) &&
+              c.text !== "",
+          );
+
+          // Check that there is exactly one text item to avoid ambiguity
+          if (textItems.length === 1) {
+            humanMessageTexts.push(textItems[0].text);
+          }
+        }
+      }
+    }
+
+    if (humanMessageTexts.length > 0) {
+      return last(humanMessageTexts);
     }
   } else if (
     config.type === "output" &&
