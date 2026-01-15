@@ -327,4 +327,141 @@ describe("prettifyMessage", () => {
       prettified: true,
     });
   });
+
+  it("handles LangGraph input with array content format", () => {
+    const message = {
+      messages: [
+        {
+          type: "human",
+          content: [
+            { type: "text", text: "Hello, how are you?" },
+            { type: "text", text: "I have a question." },
+          ],
+        },
+      ],
+    };
+    const result = prettifyMessage(message, { type: "input" });
+    expect(result).toEqual({
+      message: "Hello, how are you? I have a question.",
+      prettified: true,
+    });
+  });
+
+  it("handles LangGraph input with array content when system message is last", () => {
+    const message = {
+      messages: [
+        {
+          type: "human",
+          content: [{ type: "text", text: "This is the user message" }],
+        },
+        {
+          type: "system",
+          content: "This is a system message at the end",
+        },
+      ],
+    };
+    const result = prettifyMessage(message, { type: "input" });
+    expect(result).toEqual({
+      message: "This is the user message",
+      prettified: true,
+    });
+  });
+
+  it("handles LangGraph input with multiple human messages with array content and system message last", () => {
+    const message = {
+      messages: [
+        {
+          type: "human",
+          content: [{ type: "text", text: "First human message" }],
+        },
+        {
+          type: "ai",
+          content: "AI response",
+        },
+        {
+          type: "human",
+          content: [{ type: "text", text: "Second human message" }],
+        },
+        {
+          type: "system",
+          content: "System message at the end",
+        },
+      ],
+    };
+    const result = prettifyMessage(message, { type: "input" });
+    expect(result).toEqual({
+      message: "Second human message",
+      prettified: true,
+    });
+  });
+
+  it("handles LangGraph input with mixed string and array content formats", () => {
+    const message = {
+      messages: [
+        {
+          type: "human",
+          content: "First message as string",
+        },
+        {
+          type: "ai",
+          content: "AI response",
+        },
+        {
+          type: "human",
+          content: [{ type: "text", text: "Second message as array" }],
+        },
+      ],
+    };
+    const result = prettifyMessage(message, { type: "input" });
+    expect(result).toEqual({
+      message: "Second message as array",
+      prettified: true,
+    });
+  });
+
+  it("handles LangGraph input with array content containing non-text items", () => {
+    const message = {
+      messages: [
+        {
+          type: "human",
+          content: [
+            { type: "image", url: "image.png" },
+            { type: "text", text: "Text content here" },
+            { type: "other", data: "something" },
+          ],
+        },
+      ],
+    };
+    const result = prettifyMessage(message, { type: "input" });
+    expect(result).toEqual({
+      message: "Text content here",
+      prettified: true,
+    });
+  });
+
+  it("handles LangGraph input with empty array content", () => {
+    const message = {
+      messages: [
+        {
+          type: "human",
+          content: [],
+        },
+      ],
+    };
+    const result = prettifyMessage(message, { type: "input" });
+    expect(result).toEqual({ message, prettified: false });
+  });
+
+  it("handles LangGraph input with array content containing only empty text", () => {
+    const message = {
+      messages: [
+        {
+          type: "human",
+          content: [{ type: "text", text: "" }],
+        },
+      ],
+    };
+    const result = prettifyMessage(message, { type: "input" });
+    expect(result).toEqual({ message, prettified: false });
+  });
 });

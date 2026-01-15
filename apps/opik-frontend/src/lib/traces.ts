@@ -218,12 +218,37 @@ const prettifyLangGraphLogic = (
         "type" in m &&
         m.type === "human" &&
         "content" in m &&
-        isString(m.content) &&
-        m.content !== "",
+        ((isString(m.content) && m.content !== "") ||
+          (isArray(m.content) &&
+            m.content.some(
+              (c) =>
+                isObject(c) &&
+                "type" in c &&
+                c.type === "text" &&
+                "text" in c &&
+                isString(c.text) &&
+                c.text !== "",
+            ))),
     );
 
     if (humanMessages.length > 0) {
-      return last(humanMessages).content;
+      const lastHuman = last(humanMessages);
+      if (isString(lastHuman.content)) {
+        return lastHuman.content;
+      } else if (isArray(lastHuman.content)) {
+        const textItems = lastHuman.content.filter(
+          (c) =>
+            isObject(c) &&
+            "type" in c &&
+            c.type === "text" &&
+            "text" in c &&
+            isString(c.text) &&
+            c.text !== "",
+        );
+        if (textItems.length > 0) {
+          return textItems.map((item) => item.text).join(" ");
+        }
+      }
     }
   } else if (
     config.type === "output" &&
@@ -519,7 +544,15 @@ export const prettifyMessage = (
     } as PrettifyMessageResponse;
   }
   try {
-    let processedMessage = prettifyOpenAIMessageLogic(message, config);
+    let processedMessage = prettifyLangGraphLogic(message, config);
+
+    if (!isString(processedMessage)) {
+      processedMessage = prettifyLangChainLogic(message, config);
+    }
+
+    if (!isString(processedMessage)) {
+      processedMessage = prettifyOpenAIMessageLogic(message, config);
+    }
 
     if (!isString(processedMessage)) {
       processedMessage = prettifyOpenAIAgentsMessageLogic(message, config);
@@ -527,14 +560,6 @@ export const prettifyMessage = (
 
     if (!isString(processedMessage)) {
       processedMessage = prettifyADKMessageLogic(message, config);
-    }
-
-    if (!isString(processedMessage)) {
-      processedMessage = prettifyLangGraphLogic(message, config);
-    }
-
-    if (!isString(processedMessage)) {
-      processedMessage = prettifyLangChainLogic(message, config);
     }
 
     if (!isString(processedMessage)) {
